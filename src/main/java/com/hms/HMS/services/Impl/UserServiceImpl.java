@@ -11,6 +11,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,8 @@ public class UserServiceImpl implements UserService {
      * Create a new user
      */
     @Override
-    public UserDto createUser(UserDto userDto) {
+    public UserDto createUser(UserDto userDto)  {
+        User savedUser = null;
         // Check if the email already exists
         if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
             throw new ResourceAlreadyExistsException("User with email " + userDto.getEmail() + " already exists.");
@@ -40,19 +42,20 @@ public class UserServiceImpl implements UserService {
 
         // Map DTO to Entity
         User user = mapper.map(userDto, User.class);
-        User savedUser = userRepository.save(user);
-
-        // Send email notification
-        String subject = "Welcome to Agoda!";
-        String body = "Dear " + savedUser.getName() + ",\n\n"
-                + "Thank you for registering with our Hotel. "
-                + "Your account has been successfully created.\n\n"
-                + "Best Regards,\nAgoda Team";
-        emailService.sendEmail(savedUser.getEmail(), subject, body);
 
 
 
+            // Send email notification
+            String subject = "Welcome to Agoda!";
+            String body = "Dear " + user.getName() + ",\n\n"
+                    + "Thank you for registering with our Hotel. "
+                    + "Your account has been successfully created.\n\n"
+                    + "Best Regards,\nAgoda Team";
+        String msg = emailService.sendEmail(user.getEmail(), subject, body);
 
+        if(msg!=null && !msg.equals("")){
+            savedUser = userRepository.save(user);
+        }
 
         // Map Entity to DTO
         return mapper.map(savedUser, UserDto.class);
